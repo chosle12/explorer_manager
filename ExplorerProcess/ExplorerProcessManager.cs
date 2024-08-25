@@ -165,10 +165,10 @@ namespace ExplorerManager
                         explorerWindows.Add(hWnd);
                     }
                 }
-                catch (ArgumentException ex)
+                catch (ArgumentException)
                 {
                 }
-                catch (InvalidOperationException ex)
+                catch (InvalidOperationException)
                 {
                 }
 
