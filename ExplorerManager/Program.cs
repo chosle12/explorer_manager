@@ -9,17 +9,17 @@ namespace ExplorerManager
 
         static void Main()
         {
-            ExplorerProcess.closeCallback += () =>
+            var explorerProcessManager = new ExplorerProcessManager();
+            explorerProcessManager.OnExplorerClosed += () =>
             {
                 Console.WriteLine("Explorer window has closed. Exiting application.");
                 Application.Exit();
             };
 
-            var explorerProcess = new ExplorerProcess();
-            var newExplorerWindow = explorerProcess.RunProcess();
-            if (newExplorerWindow != IntPtr.Zero)
+            var explorer = explorerProcessManager.StartExplorer();
+            if (explorer != IntPtr.Zero)
             {
-                Console.WriteLine($"New explorer.exe window found with handle: {newExplorerWindow}");
+                Console.WriteLine($"New explorer.exe window found with handle: {explorer}");
                 Application.Run();
             }
             else

@@ -3,13 +3,13 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
-using System.Text;
-using Timer = System.Threading.Timer;
+using System.Threading;
 
 namespace ExplorerManager
 {
-    public class ExplorerProcess
+    public class ExplorerProcessManager
     {
+        #region user32 dll imports
         private delegate bool EnumWindowsProc(IntPtr hWnd, IntPtr lParam);
 
         [DllImport("user32.dll")]
@@ -18,83 +18,79 @@ namespace ExplorerManager
         [DllImport("user32.dll")]
         private static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint lpdwProcessId);
 
-        [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
-        private static extern int GetWindowText(IntPtr hWnd, StringBuilder lpString, int nMaxCount);
-
         [DllImport("user32.dll")]
         private static extern bool IsWindowVisible(IntPtr hWnd);
+        #endregion
 
-        public delegate void CloseCallback();
-        public static CloseCallback closeCallback;
+        public delegate void ExplorerClosedCallback();
+        public event ExplorerClosedCallback OnExplorerClosed;
 
-        private static Timer _timer;
+        private Timer windowCloseCheckTimer;
 
-        public IntPtr RunProcess()
+        public IntPtr StartExplorer()
         {
-            var initialWindows = GetExplorerWindows();
+            var initialExplorerWindows = GetExplorerWindowHandles();
 
             Process.Start("explorer.exe");
 
-            IntPtr newWindowHandle = IntPtr.Zero;
-            int maxWaitTime = 2000;
-            int elapsed = 0;
-            int sleepInterval = 50;
+            IntPtr newExplorerWindowHandle = IntPtr.Zero;
+            const int maxWaitTimeInMilliseconds = 2000;
+            const int pollingIntervalInMilliseconds = 50;
+            int elapsedMilliseconds = 0;
 
-            while (elapsed < maxWaitTime)
+            while (elapsedMilliseconds < maxWaitTimeInMilliseconds)
             {
-                var currentWindows = GetExplorerWindows();
-                var newWindows = currentWindows.Except(initialWindows).ToList();
-                if (newWindows.Any())
+                var currentExplorerWindows = GetExplorerWindowHandles();
+                var newExplorerWindows = currentExplorerWindows.Except(initialExplorerWindows).ToList();
+
+                if (newExplorerWindows.Any())
                 {
-                    newWindowHandle = newWindows.First();
+                    newExplorerWindowHandle = newExplorerWindows.First();
                     break;
                 }
-                else
-                {
-                    System.Threading.Thread.Sleep(sleepInterval);
-                    elapsed += sleepInterval;
-                }
+
+                Thread.Sleep(pollingIntervalInMilliseconds);
+                elapsedMilliseconds += pollingIntervalInMilliseconds;
             }
 
-            if (newWindowHandle != IntPtr.Zero)
+            if (newExplorerWindowHandle != IntPtr.Zero)
             {
-                _timer = new Timer(CheckWindowClosed, newWindowHandle, 0, 100);
+                windowCloseCheckTimer = new Timer(CheckIfWindowClosed, newExplorerWindowHandle, 0, 100);
             }
 
-            return newWindowHandle;
+            return newExplorerWindowHandle;
         }
 
-        private static void CheckWindowClosed(object state)
+        private void CheckIfWindowClosed(object state)
         {
-            IntPtr windowHandle = (IntPtr)state;
+            IntPtr explorerWindowHandle = (IntPtr)state;
 
-            if (!IsWindowVisible(windowHandle))
+            if (!IsWindowVisible(explorerWindowHandle))
             {
-                closeCallback?.Invoke();
-                _timer?.Dispose();
+                OnExplorerClosed?.Invoke();
+                windowCloseCheckTimer?.Dispose();
             }
         }
 
-        private List<IntPtr> GetExplorerWindows()
+        private List<IntPtr> GetExplorerWindowHandles()
         {
-            var windows = new List<IntPtr>();
+            var explorerWindows = new List<IntPtr>();
 
             EnumWindows((hWnd, lParam) =>
             {
-                uint processId;
-                GetWindowThreadProcessId(hWnd, out processId);
+                GetWindowThreadProcessId(hWnd, out uint processId);
 
                 var process = Process.GetProcessById((int)processId);
 
                 if (process.ProcessName.Equals("explorer", StringComparison.OrdinalIgnoreCase) && IsWindowVisible(hWnd))
                 {
-                    windows.Add(hWnd);
+                    explorerWindows.Add(hWnd);
                 }
 
                 return true;
             }, IntPtr.Zero);
 
-            return windows;
+            return explorerWindows;
         }
     }
 }
