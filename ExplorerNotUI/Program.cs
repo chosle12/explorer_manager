@@ -4,9 +4,6 @@ namespace ExplorerManager
 {
     internal static class Program
     {
-        [DllImport("user32.dll")]
-        private static extern bool IsWindow(IntPtr hWnd);
-
         static void Main()
         {
             var explorerProcessManager = new ExplorerProcessManager();

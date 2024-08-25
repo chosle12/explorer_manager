@@ -2,51 +2,17 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Threading;
 
 namespace ExplorerManager
 {
     public class ExplorerProcessManager
     {
-        private readonly int maxWaitTimeInMilliseconds = 2000;
-        private readonly int pollingIntervalInMilliseconds = 50;
+        private const int MaxWaitTimeInMilliseconds = 2000;
+        private const int PollingIntervalInMilliseconds = 50;
 
-        private readonly int topMostSetRetries = 50;
-        private readonly int topMostSetSleepTimeMilliseconds = 100;
-
-        #region user32 dll imports
-        private delegate bool EnumWindowsProc(IntPtr hWnd, IntPtr lParam);
-
-        [DllImport("user32.dll", SetLastError = true)]
-        private static extern int GetWindowLong(IntPtr hWnd, int nIndex);
-
-        [DllImport("user32.dll")]
-        private static extern bool EnumWindows(EnumWindowsProc enumProc, IntPtr lParam);
-
-        [DllImport("user32.dll")]
-        private static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint lpdwProcessId);
-
-        [DllImport("user32.dll")]
-        private static extern bool IsWindowVisible(IntPtr hWnd);
-
-        [DllImport("user32.dll")]
-        private static extern bool IsWindow(IntPtr hWnd);
-
-        [DllImport("user32.dll", SetLastError = true)]
-        private static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
-        [DllImport("user32.dll", SetLastError = true)]
-        private static extern bool SetForegroundWindow(IntPtr hWnd);
-
-        private static readonly IntPtr HWND_TOPMOST = new IntPtr(-1);
-        private static readonly IntPtr HWND_NOTOPMOST = new IntPtr(-2);
-        private const uint SWP_NOSIZE = 0x0001;
-        private const uint SWP_NOMOVE = 0x0002;
-        private const uint SWP_NOACTIVATE = 0x0010;
-        private const uint SWP_SHOWWINDOW = 0x0040;
-        private const int GWL_EXSTYLE = -20;
-        private const int WS_EX_TOPMOST = 0x00000008;
-        #endregion
+        private const int TopMostSetRetries = 50;
+        private const int TopMostSetSleepTimeMilliseconds = 100;
 
         public delegate void ExplorerClosedCallback(IntPtr hWnd);
         public event ExplorerClosedCallback OnExplorerClosed;
@@ -62,8 +28,7 @@ namespace ExplorerManager
 
             explorerWindowHandle = IntPtr.Zero;
             int elapsedMilliseconds = 0;
-
-            while (elapsedMilliseconds < maxWaitTimeInMilliseconds)
+            while (elapsedMilliseconds < MaxWaitTimeInMilliseconds)
             {
                 var currentExplorerWindows = GetExplorerWindowHandles();
                 var newExplorerWindows = currentExplorerWindows.Except(initialExplorerWindows).ToList();
@@ -74,13 +39,13 @@ namespace ExplorerManager
                     break;
                 }
 
-                Thread.Sleep(pollingIntervalInMilliseconds);
-                elapsedMilliseconds += pollingIntervalInMilliseconds;
+                Thread.Sleep(PollingIntervalInMilliseconds);
+                elapsedMilliseconds += PollingIntervalInMilliseconds;
             }
 
             if (explorerWindowHandle != IntPtr.Zero)
             {
-                windowCloseCheckTimer = new Timer(CheckIfWindowClosed, explorerWindowHandle, 0, 100);
+                windowCloseCheckTimer = new Timer(OnWindowClosedCheck, explorerWindowHandle, 0, 100);
             }
 
             return explorerWindowHandle;
@@ -88,14 +53,12 @@ namespace ExplorerManager
 
         public Process GetProcess()
         {
-            if (explorerWindowHandle == IntPtr.Zero ||
-                !IsWindow(explorerWindowHandle) ||
-                !IsWindowVisible(explorerWindowHandle))
+            if (!IsValidExplorerWindowHandle())
             {
                 return null;
             }
 
-            GetWindowThreadProcessId(explorerWindowHandle, out uint processId);
+            User32.GetWindowThreadProcessId(explorerWindowHandle, out uint processId);
 
             try
             {
@@ -109,64 +72,67 @@ namespace ExplorerManager
 
         public bool SetTopMost()
         {
-            return SetttingTopMost(true);
+            return SetTopMostState(true);
         }
 
         public bool SetNoTopMost()
         {
-            return SetttingTopMost(false);
+            return SetTopMostState(false);
         }
 
-        private bool SetttingTopMost(bool isTopMost)
+        public bool SetForegroundWindow()
         {
-            if (explorerWindowHandle == IntPtr.Zero ||
-                !IsWindow(explorerWindowHandle) ||
-                !IsWindowVisible(explorerWindowHandle))
+            if (!IsValidExplorerWindowHandle())
             {
                 return false;
             }
 
-            SetForegroundWindow(explorerWindowHandle);
+            return User32.SetForegroundWindow(explorerWindowHandle);
+        }
 
-            int retries = topMostSetRetries;
+        private bool SetTopMostState(bool isTopMost)
+        {
+            if (!IsValidExplorerWindowHandle())
+            {
+                return false;
+            }
+
+            User32.SetForegroundWindow(explorerWindowHandle);
+
+            int retries = TopMostSetRetries;
             while (retries-- > 0)
             {
-                SetWindowPos(
-                explorerWindowHandle,
-                isTopMost ? HWND_TOPMOST : HWND_NOTOPMOST,
-                0, 0, 0, 0,
-                SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_SHOWWINDOW);
+                User32.SetWindowPos(
+                    explorerWindowHandle,
+                    isTopMost ? User32.HWND_TOPMOST : User32.HWND_NOTOPMOST,
+                    0, 0, 0, 0,
+                    User32.SWP_NOMOVE | User32.SWP_NOSIZE | User32.SWP_NOACTIVATE | User32.SWP_SHOWWINDOW);
 
-                int exStyle = GetWindowLong(explorerWindowHandle, GWL_EXSTYLE);
-                bool currentStateIsTopMost = (exStyle & WS_EX_TOPMOST) != 0;
+                int exStyle = User32.GetWindowLong(explorerWindowHandle, User32.GWL_EXSTYLE);
+                bool currentStateIsTopMost = (exStyle & User32.WS_EX_TOPMOST) != 0;
                 if (currentStateIsTopMost == isTopMost)
                 {
-                    return true; 
+                    return true;
                 }
 
-                Thread.Sleep(topMostSetSleepTimeMilliseconds); 
+                Thread.Sleep(TopMostSetSleepTimeMilliseconds);
             }
 
             return false;
         }
 
-        public bool SetForegroundWindow()
+        private bool IsValidExplorerWindowHandle()
         {
-            if (explorerWindowHandle == IntPtr.Zero ||
-                !IsWindow(explorerWindowHandle) ||
-                !IsWindowVisible(explorerWindowHandle))
-            {
-                return false;
-            }
-
-            return SetForegroundWindow(explorerWindowHandle);
+            return explorerWindowHandle != IntPtr.Zero &&
+                   User32.IsWindow(explorerWindowHandle) &&
+                   User32.IsWindowVisible(explorerWindowHandle);
         }
 
-        private void CheckIfWindowClosed(object state)
+        private void OnWindowClosedCheck(object state)
         {
             IntPtr explorerWindowHandle = (IntPtr)state;
 
-            if (!IsWindowVisible(explorerWindowHandle))
+            if (!User32.IsWindowVisible(explorerWindowHandle))
             {
                 OnExplorerClosed?.Invoke(explorerWindowHandle);
                 windowCloseCheckTimer?.Dispose();
@@ -177,34 +143,29 @@ namespace ExplorerManager
         {
             var explorerWindows = new List<IntPtr>();
 
-            try
+            User32.EnumWindows((hWnd, lParam) =>
             {
-                EnumWindows((hWnd, lParam) =>
+                User32.GetWindowThreadProcessId(hWnd, out uint processId);
+
+                try
                 {
-                    try
+                    var process = Process.GetProcessById((int)processId);
+                    if (process.ProcessName.Equals("explorer", StringComparison.OrdinalIgnoreCase) && User32.IsWindowVisible(hWnd))
                     {
-                        GetWindowThreadProcessId(hWnd, out uint processId);
-
-                        var process = Process.GetProcessById((int)processId);
-
-                        if (process.ProcessName.Equals("explorer", StringComparison.OrdinalIgnoreCase) && IsWindowVisible(hWnd))
-                        {
-                            explorerWindows.Add(hWnd);
-                        }
+                        explorerWindows.Add(hWnd);
                     }
-                    catch (ArgumentException)
-                    {
-                    }
-                    catch (InvalidOperationException)
-                    {
-                    }
+                }
+                catch (ArgumentException)
+                {
+                    // 로깅 또는 다른 처리를 할 수 있습니다.
+                }
+                catch (InvalidOperationException)
+                {
+                    // 로깅 또는 다른 처리를 할 수 있습니다.
+                }
 
-                    return true;
-                }, IntPtr.Zero);
-            }
-            catch (Exception)
-            {
-            }
+                return true;
+            }, IntPtr.Zero);
 
             return explorerWindows;
         }
