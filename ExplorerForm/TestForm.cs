@@ -7,25 +7,28 @@ namespace ExplorerForm
         public TestForm()
         {
             InitializeComponent();
-            UpdateEnabledButtons();
+            UpdateEnableds();
         }
 
-        private List<ExplorerProcessManager> explorerProcessManagers = new List<ExplorerProcessManager>();
+        private Dictionary<IntPtr, ExplorerProcessManager> explorerProcessManagers = new Dictionary<IntPtr, ExplorerProcessManager>();
 
         private void buttonStart_Click(object sender, EventArgs e)
         {
             var explorerProcessManager = new ExplorerProcessManager();
-            explorerProcessManagers.Add(explorerProcessManager);
             explorerProcessManager.OnExplorerClosed += (hWnd) =>
             {
                 UpdateText(labelStatus, $"Close({hWnd})");
-                explorerProcessManagers.Remove(explorerProcessManager);
-                UpdateEnabledButtons();
+                explorerProcessManagers.Remove(hWnd);
+                comboBoxWindowIDs.Items.Remove(hWnd);
+                UpdateEnableds();
             };
 
             var explorer = explorerProcessManager.StartExplorer();
             if (explorer != IntPtr.Zero)
             {
+                explorerProcessManagers.Add(explorer, explorerProcessManager);
+                comboBoxWindowIDs.Items.Add(explorer);
+                comboBoxWindowIDs.SelectedItem = explorer;
                 UpdateText(labelStatus, $"New explorer.exe window found with handle: {explorer}");
             }
             else
@@ -33,30 +36,49 @@ namespace ExplorerForm
                 UpdateText(labelStatus, "No new explorer.exe window was found.");
             }
 
-            UpdateEnabledButtons();
+            UpdateEnableds();
         }
 
         private void buttonTopMost_Click(object sender, EventArgs e)
         {
-            if (explorerProcessManagers.Count > 0)
+            if (comboBoxWindowIDs.SelectedItem is IntPtr hWnd)
             {
-                explorerProcessManagers.Last().SetTopMost();
+                if (explorerProcessManagers.TryGetValue(hWnd, out var explorerProcessManager))
+                {
+                    explorerProcessManager.SetTopMost();
+                }
+            }
+        }
+
+        private void buttonNoTopMost_Click(object sender, EventArgs e)
+        {
+            if (comboBoxWindowIDs.SelectedItem is IntPtr hWnd)
+            {
+                if (explorerProcessManagers.TryGetValue(hWnd, out var explorerProcessManager))
+                {
+                    explorerProcessManager.SetNoTopMost();
+                }
             }
         }
 
         private void buttonVisibleTop_Click(object sender, EventArgs e)
         {
-            if (explorerProcessManagers.Count > 0)
+            if (comboBoxWindowIDs.SelectedItem is IntPtr hWnd)
             {
-                explorerProcessManagers.Last().SetWindowTopForMoment();
+                if (explorerProcessManagers.TryGetValue(hWnd, out var explorerProcessManager))
+                {
+                    explorerProcessManager.SetForegroundWindow();
+                }
             }
         }
 
-        private void UpdateEnabledButtons()
+        private void UpdateEnableds()
         {
             bool isEnable = explorerProcessManagers.Count > 0;
             UpdateEnabled(buttonTopMost, isEnable);
             UpdateEnabled(buttonVisibleTop, isEnable);
+            UpdateEnabled(buttonNoTopMost, isEnable);
+            UpdateEnabled(comboBoxWindowIDs, isEnable);
         }
 
         #region thread safe
@@ -88,9 +110,19 @@ namespace ExplorerForm
                     button.Enabled = enabled;
                 }
             }
+            else if (s is ComboBox comboBox)
+            {
+                if (comboBox.InvokeRequired)
+                {
+                    comboBox.Invoke(new Action<object, bool>(UpdateEnabled), s, enabled);
+                }
+                else
+                {
+                    comboBox.Enabled = enabled;
+                }
+            }
         }
 
         #endregion
-
     }
 }

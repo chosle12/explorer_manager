@@ -35,13 +35,15 @@
             labelPath = new Label();
             buttonTopMost = new Button();
             buttonVisibleTop = new Button();
+            comboBoxWindowIDs = new ComboBox();
+            buttonNoTopMost = new Button();
             SuspendLayout();
             // 
             // buttonStart
             // 
             buttonStart.Location = new Point(12, 123);
             buttonStart.Name = "buttonStart";
-            buttonStart.Size = new Size(151, 23);
+            buttonStart.Size = new Size(171, 23);
             buttonStart.TabIndex = 0;
             buttonStart.Text = "Run Explorer";
             buttonStart.UseVisualStyleBackColor = true;
@@ -88,7 +90,7 @@
             // 
             buttonTopMost.Location = new Point(12, 152);
             buttonTopMost.Name = "buttonTopMost";
-            buttonTopMost.Size = new Size(151, 23);
+            buttonTopMost.Size = new Size(88, 23);
             buttonTopMost.TabIndex = 5;
             buttonTopMost.Text = "TopMost";
             buttonTopMost.UseVisualStyleBackColor = true;
@@ -98,17 +100,37 @@
             // 
             buttonVisibleTop.Location = new Point(12, 181);
             buttonVisibleTop.Name = "buttonVisibleTop";
-            buttonVisibleTop.Size = new Size(151, 23);
+            buttonVisibleTop.Size = new Size(171, 23);
             buttonVisibleTop.TabIndex = 6;
-            buttonVisibleTop.Text = "Visible Top";
+            buttonVisibleTop.Text = "Foreground Window";
             buttonVisibleTop.UseVisualStyleBackColor = true;
             buttonVisibleTop.Click += buttonVisibleTop_Click;
+            // 
+            // comboBoxWindowIDs
+            // 
+            comboBoxWindowIDs.FormattingEnabled = true;
+            comboBoxWindowIDs.Location = new Point(189, 124);
+            comboBoxWindowIDs.Name = "comboBoxWindowIDs";
+            comboBoxWindowIDs.Size = new Size(137, 23);
+            comboBoxWindowIDs.TabIndex = 7;
+            // 
+            // buttonNoTopMost
+            // 
+            buttonNoTopMost.Location = new Point(106, 152);
+            buttonNoTopMost.Name = "buttonNoTopMost";
+            buttonNoTopMost.Size = new Size(77, 23);
+            buttonNoTopMost.TabIndex = 8;
+            buttonNoTopMost.Text = "UnTopMost";
+            buttonNoTopMost.UseVisualStyleBackColor = true;
+            buttonNoTopMost.Click += buttonNoTopMost_Click;
             // 
             // TestForm
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(405, 218);
+            ClientSize = new Size(342, 218);
+            Controls.Add(buttonNoTopMost);
+            Controls.Add(comboBoxWindowIDs);
             Controls.Add(buttonVisibleTop);
             Controls.Add(buttonTopMost);
             Controls.Add(labelPath);
@@ -132,5 +154,7 @@
         private Label labelPath;
         private Button buttonTopMost;
         private Button buttonVisibleTop;
+        private ComboBox comboBoxWindowIDs;
+        private Button buttonNoTopMost;
     }
 }

@@ -29,6 +29,8 @@ namespace ExplorerManager
 
         [DllImport("user32.dll", SetLastError = true)]
         private static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
+        [DllImport("user32.dll", SetLastError = true)]
+        private static extern bool SetForegroundWindow(IntPtr hWnd);
 
         private static readonly IntPtr HWND_TOPMOST = new IntPtr(-1);
         private static readonly IntPtr HWND_NOTOPMOST = new IntPtr(-2);
@@ -106,14 +108,24 @@ namespace ExplorerManager
                 return false;
             }
 
-            return SetWindowPos(
+            SetForegroundWindow(explorerWindowHandle);
+
+            bool result = SetWindowPos(
                 explorerWindowHandle,
                 HWND_TOPMOST,
                 0, 0, 0, 0,
                 SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_SHOWWINDOW);
+
+            if (!result)
+            {
+                int error = Marshal.GetLastWin32Error();
+                Debug.WriteLine($"SetWindowPos failed with error code: {error}");
+            }
+
+            return result;
         }
 
-        public bool SetWindowTopForMoment()
+        public bool SetNoTopMost()
         {
             if (explorerWindowHandle == IntPtr.Zero ||
                 !IsWindow(explorerWindowHandle) ||
@@ -122,19 +134,31 @@ namespace ExplorerManager
                 return false;
             }
 
-            SetWindowPos(
-                explorerWindowHandle,
-                HWND_TOPMOST,
-                0, 0, 0, 0,
-                SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_SHOWWINDOW);
-
-            Thread.Sleep(100);
-
-            return SetWindowPos(
+            bool result = SetWindowPos(
                 explorerWindowHandle,
                 HWND_NOTOPMOST,
                 0, 0, 0, 0,
                 SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_SHOWWINDOW);
+
+            if (!result)
+            {
+                int error = Marshal.GetLastWin32Error();
+                Debug.WriteLine($"SetWindowPos failed with error code: {error}");
+            }
+
+            return result;
+        }
+
+        public bool SetForegroundWindow()
+        {
+            if (explorerWindowHandle == IntPtr.Zero ||
+                !IsWindow(explorerWindowHandle) ||
+                !IsWindowVisible(explorerWindowHandle))
+            {
+                return false;
+            }
+
+            return SetForegroundWindow(explorerWindowHandle);
         }
 
         private void CheckIfWindowClosed(object state)
