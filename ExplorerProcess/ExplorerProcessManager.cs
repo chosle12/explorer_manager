@@ -157,11 +157,9 @@ namespace ExplorerManager
                 }
                 catch (ArgumentException)
                 {
-                    // 로깅 또는 다른 처리를 할 수 있습니다.
                 }
                 catch (InvalidOperationException)
                 {
-                    // 로깅 또는 다른 처리를 할 수 있습니다.
                 }
 
                 return true;

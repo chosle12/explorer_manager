@@ -65,7 +65,7 @@ namespace ExplorerForm
         {
             if (TryGetSelectedExplorerManager(out var explorerProcessManager))
             {
-                explorerProcessManager.SetTopMost();
+                explorerProcessManager?.SetTopMost();
             }
         }
 
@@ -73,7 +73,7 @@ namespace ExplorerForm
         {
             if (TryGetSelectedExplorerManager(out var explorerProcessManager))
             {
-                explorerProcessManager.SetNoTopMost();
+                explorerProcessManager?.SetNoTopMost();
             }
         }
 
@@ -81,11 +81,11 @@ namespace ExplorerForm
         {
             if (TryGetSelectedExplorerManager(out var explorerProcessManager))
             {
-                explorerProcessManager.SetForegroundWindow();
+                explorerProcessManager?.SetForegroundWindow();
             }
         }
 
-        private bool TryGetSelectedExplorerManager(out ExplorerProcessManager explorerProcessManager)
+        private bool TryGetSelectedExplorerManager(out ExplorerProcessManager? explorerProcessManager)
         {
             explorerProcessManager = null;
             if (comboBoxWindowIDs.SelectedItem is IntPtr hWnd)
