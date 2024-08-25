@@ -9,6 +9,10 @@ namespace ExplorerManager
 {
     public class ExplorerProcessManager
     {
+        private readonly int maxWaitTimeInMilliseconds = 2000;
+        private readonly int pollingIntervalInMilliseconds = 50;
+
+
         #region user32 dll imports
         private delegate bool EnumWindowsProc(IntPtr hWnd, IntPtr lParam);
 
@@ -20,12 +24,16 @@ namespace ExplorerManager
 
         [DllImport("user32.dll")]
         private static extern bool IsWindowVisible(IntPtr hWnd);
+
+        [DllImport("user32.dll")]
+        private static extern bool IsWindow(IntPtr hWnd);
         #endregion
 
         public delegate void ExplorerClosedCallback();
         public event ExplorerClosedCallback OnExplorerClosed;
 
         private Timer windowCloseCheckTimer;
+        private IntPtr explorerWindowHandle;
 
         public IntPtr StartExplorer()
         {
@@ -33,9 +41,7 @@ namespace ExplorerManager
 
             Process.Start("explorer.exe");
 
-            IntPtr newExplorerWindowHandle = IntPtr.Zero;
-            const int maxWaitTimeInMilliseconds = 2000;
-            const int pollingIntervalInMilliseconds = 50;
+            explorerWindowHandle = IntPtr.Zero;
             int elapsedMilliseconds = 0;
 
             while (elapsedMilliseconds < maxWaitTimeInMilliseconds)
@@ -45,7 +51,7 @@ namespace ExplorerManager
 
                 if (newExplorerWindows.Any())
                 {
-                    newExplorerWindowHandle = newExplorerWindows.First();
+                    explorerWindowHandle = newExplorerWindows.First();
                     break;
                 }
 
@@ -53,12 +59,33 @@ namespace ExplorerManager
                 elapsedMilliseconds += pollingIntervalInMilliseconds;
             }
 
-            if (newExplorerWindowHandle != IntPtr.Zero)
+            if (explorerWindowHandle != IntPtr.Zero)
             {
-                windowCloseCheckTimer = new Timer(CheckIfWindowClosed, newExplorerWindowHandle, 0, 100);
+                windowCloseCheckTimer = new Timer(CheckIfWindowClosed, explorerWindowHandle, 0, 100);
             }
 
-            return newExplorerWindowHandle;
+            return explorerWindowHandle;
+        }
+
+        public Process GetProcess()
+        {
+            if (explorerWindowHandle == IntPtr.Zero ||
+                !IsWindow(explorerWindowHandle) ||
+                !IsWindowVisible(explorerWindowHandle))
+            {
+                return null;
+            }
+
+            GetWindowThreadProcessId(explorerWindowHandle, out uint processId);
+
+            try
+            {
+                return Process.GetProcessById((int)processId);
+            }
+            catch (ArgumentException)
+            {
+                return null;
+            }
         }
 
         private void CheckIfWindowClosed(object state)
@@ -76,19 +103,34 @@ namespace ExplorerManager
         {
             var explorerWindows = new List<IntPtr>();
 
-            EnumWindows((hWnd, lParam) =>
+            try
             {
-                GetWindowThreadProcessId(hWnd, out uint processId);
-
-                var process = Process.GetProcessById((int)processId);
-
-                if (process.ProcessName.Equals("explorer", StringComparison.OrdinalIgnoreCase) && IsWindowVisible(hWnd))
+                EnumWindows((hWnd, lParam) =>
                 {
-                    explorerWindows.Add(hWnd);
-                }
+                    try
+                    {
+                        GetWindowThreadProcessId(hWnd, out uint processId);
 
-                return true;
-            }, IntPtr.Zero);
+                        var process = Process.GetProcessById((int)processId);
+
+                        if (process.ProcessName.Equals("explorer", StringComparison.OrdinalIgnoreCase) && IsWindowVisible(hWnd))
+                        {
+                            explorerWindows.Add(hWnd);
+                        }
+                    }
+                    catch (ArgumentException)
+                    {
+                    }
+                    catch (InvalidOperationException)
+                    {
+                    }
+
+                    return true;
+                }, IntPtr.Zero);
+            }
+            catch (Exception)
+            {
+            }
 
             return explorerWindows;
         }
