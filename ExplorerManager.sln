@@ -3,9 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.11.35208.52
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ExplorerManager", "ExplorerManager\ExplorerManager.csproj", "{D580E910-FC59-4B89-9964-94D6D445BA9D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ExplorerNotUI", "ExplorerManager\ExplorerNotUI.csproj", "{D580E910-FC59-4B89-9964-94D6D445BA9D}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExplorerProcess", "ExplorerProcess\ExplorerProcess.csproj", "{A6DC96AF-7E81-4416-A79D-E6F4A915094D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExplorerForm", "ExplorerForm\ExplorerForm.csproj", "{E2E94AA9-7794-4735-BD11-9DDB5E1EDC5B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +23,10 @@ Global
 		{A6DC96AF-7E81-4416-A79D-E6F4A915094D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A6DC96AF-7E81-4416-A79D-E6F4A915094D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A6DC96AF-7E81-4416-A79D-E6F4A915094D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E2E94AA9-7794-4735-BD11-9DDB5E1EDC5B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E2E94AA9-7794-4735-BD11-9DDB5E1EDC5B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E2E94AA9-7794-4735-BD11-9DDB5E1EDC5B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E2E94AA9-7794-4735-BD11-9DDB5E1EDC5B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

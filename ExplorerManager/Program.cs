@@ -10,7 +10,7 @@ namespace ExplorerManager
         static void Main()
         {
             var explorerProcessManager = new ExplorerProcessManager();
-            explorerProcessManager.OnExplorerClosed += () =>
+            explorerProcessManager.OnExplorerClosed += (hWnd) =>
             {
                 Console.WriteLine("Explorer window has closed. Exiting application.");
                 Application.Exit();

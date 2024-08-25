@@ -38,7 +38,7 @@ namespace ExplorerManager
         private const uint SWP_SHOWWINDOW = 0x0040;
         #endregion
 
-        public delegate void ExplorerClosedCallback();
+        public delegate void ExplorerClosedCallback(IntPtr hWnd);
         public event ExplorerClosedCallback OnExplorerClosed;
 
         private Timer windowCloseCheckTimer;
@@ -143,7 +143,7 @@ namespace ExplorerManager
 
             if (!IsWindowVisible(explorerWindowHandle))
             {
-                OnExplorerClosed?.Invoke();
+                OnExplorerClosed?.Invoke(explorerWindowHandle);
                 windowCloseCheckTimer?.Dispose();
             }
         }
