@@ -12,8 +12,14 @@ namespace ExplorerManager
         private readonly int maxWaitTimeInMilliseconds = 2000;
         private readonly int pollingIntervalInMilliseconds = 50;
 
+        private readonly int topMostSetRetries = 50;
+        private readonly int topMostSetSleepTimeMilliseconds = 100;
+
         #region user32 dll imports
         private delegate bool EnumWindowsProc(IntPtr hWnd, IntPtr lParam);
+
+        [DllImport("user32.dll", SetLastError = true)]
+        private static extern int GetWindowLong(IntPtr hWnd, int nIndex);
 
         [DllImport("user32.dll")]
         private static extern bool EnumWindows(EnumWindowsProc enumProc, IntPtr lParam);
@@ -38,6 +44,8 @@ namespace ExplorerManager
         private const uint SWP_NOMOVE = 0x0002;
         private const uint SWP_NOACTIVATE = 0x0010;
         private const uint SWP_SHOWWINDOW = 0x0040;
+        private const int GWL_EXSTYLE = -20;
+        private const int WS_EX_TOPMOST = 0x00000008;
         #endregion
 
         public delegate void ExplorerClosedCallback(IntPtr hWnd);
@@ -101,6 +109,16 @@ namespace ExplorerManager
 
         public bool SetTopMost()
         {
+            return SetttingTopMost(true);
+        }
+
+        public bool SetNoTopMost()
+        {
+            return SetttingTopMost(false);
+        }
+
+        private bool SetttingTopMost(bool isTopMost)
+        {
             if (explorerWindowHandle == IntPtr.Zero ||
                 !IsWindow(explorerWindowHandle) ||
                 !IsWindowVisible(explorerWindowHandle))
@@ -110,43 +128,26 @@ namespace ExplorerManager
 
             SetForegroundWindow(explorerWindowHandle);
 
-            bool result = SetWindowPos(
+            int retries = topMostSetRetries;
+            while (retries-- > 0)
+            {
+                SetWindowPos(
                 explorerWindowHandle,
-                HWND_TOPMOST,
+                isTopMost ? HWND_TOPMOST : HWND_NOTOPMOST,
                 0, 0, 0, 0,
                 SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_SHOWWINDOW);
 
-            if (!result)
-            {
-                int error = Marshal.GetLastWin32Error();
-                Debug.WriteLine($"SetWindowPos failed with error code: {error}");
+                int exStyle = GetWindowLong(explorerWindowHandle, GWL_EXSTYLE);
+                bool currentStateIsTopMost = (exStyle & WS_EX_TOPMOST) != 0;
+                if (currentStateIsTopMost == isTopMost)
+                {
+                    return true; 
+                }
+
+                Thread.Sleep(topMostSetSleepTimeMilliseconds); 
             }
 
-            return result;
-        }
-
-        public bool SetNoTopMost()
-        {
-            if (explorerWindowHandle == IntPtr.Zero ||
-                !IsWindow(explorerWindowHandle) ||
-                !IsWindowVisible(explorerWindowHandle))
-            {
-                return false;
-            }
-
-            bool result = SetWindowPos(
-                explorerWindowHandle,
-                HWND_NOTOPMOST,
-                0, 0, 0, 0,
-                SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_SHOWWINDOW);
-
-            if (!result)
-            {
-                int error = Marshal.GetLastWin32Error();
-                Debug.WriteLine($"SetWindowPos failed with error code: {error}");
-            }
-
-            return result;
+            return false;
         }
 
         public bool SetForegroundWindow()
