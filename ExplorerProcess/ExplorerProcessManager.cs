@@ -6,19 +6,29 @@ using System.Threading;
 
 namespace ExplorerManager
 {
-    public class ExplorerProcessManager
+    public class ExplorerProcessManager : IDisposable
     {
         private const int MaxWaitTimeInMilliseconds = 2000;
         private const int PollingIntervalInMilliseconds = 50;
-
         private const int TopMostSetRetries = 50;
         private const int TopMostSetSleepTimeMilliseconds = 100;
+        private const int WindowCloseCheckInterval = 100;
 
         public delegate void ExplorerClosedCallback(IntPtr hWnd);
         public event ExplorerClosedCallback OnExplorerClosed;
 
         private Timer windowCloseCheckTimer;
-        private IntPtr explorerWindowHandle;
+        private IntPtr currentExplorerWindowHandle;
+
+        ~ExplorerProcessManager()
+        {
+            Dispose();
+        }
+
+        public void Dispose()
+        {
+            windowCloseCheckTimer?.Dispose();
+        }
 
         public IntPtr StartExplorer()
         {
@@ -26,29 +36,14 @@ namespace ExplorerManager
 
             Process.Start("explorer.exe");
 
-            explorerWindowHandle = IntPtr.Zero;
-            int elapsedMilliseconds = 0;
-            while (elapsedMilliseconds < MaxWaitTimeInMilliseconds)
+            currentExplorerWindowHandle = WaitForNewExplorerWindow(initialExplorerWindows);
+
+            if (currentExplorerWindowHandle != IntPtr.Zero)
             {
-                var currentExplorerWindows = GetExplorerWindowHandles();
-                var newExplorerWindows = currentExplorerWindows.Except(initialExplorerWindows).ToList();
-
-                if (newExplorerWindows.Any())
-                {
-                    explorerWindowHandle = newExplorerWindows.First();
-                    break;
-                }
-
-                Thread.Sleep(PollingIntervalInMilliseconds);
-                elapsedMilliseconds += PollingIntervalInMilliseconds;
+                StartWindowCloseCheckTimer(currentExplorerWindowHandle);
             }
 
-            if (explorerWindowHandle != IntPtr.Zero)
-            {
-                windowCloseCheckTimer = new Timer(OnWindowClosedCheck, explorerWindowHandle, 0, 100);
-            }
-
-            return explorerWindowHandle;
+            return currentExplorerWindowHandle;
         }
 
         public Process GetProcess()
@@ -58,7 +53,7 @@ namespace ExplorerManager
                 return null;
             }
 
-            User32.GetWindowThreadProcessId(explorerWindowHandle, out uint processId);
+            User32.GetWindowThreadProcessId(currentExplorerWindowHandle, out uint processId);
 
             try
             {
@@ -70,16 +65,6 @@ namespace ExplorerManager
             }
         }
 
-        public bool SetTopMost()
-        {
-            return SetTopMostState(true);
-        }
-
-        public bool SetNoTopMost()
-        {
-            return SetTopMostState(false);
-        }
-
         public bool SetForegroundWindow()
         {
             if (!IsValidExplorerWindowHandle())
@@ -87,28 +72,28 @@ namespace ExplorerManager
                 return false;
             }
 
-            return User32.SetForegroundWindow(explorerWindowHandle);
+            return User32.SetForegroundWindow(currentExplorerWindowHandle);
         }
 
-        private bool SetTopMostState(bool isTopMost)
+        public bool SetTopMostState(bool isTopMost)
         {
             if (!IsValidExplorerWindowHandle())
             {
                 return false;
             }
 
-            User32.SetForegroundWindow(explorerWindowHandle);
+            User32.SetForegroundWindow(currentExplorerWindowHandle);
 
             int retries = TopMostSetRetries;
             while (retries-- > 0)
             {
                 User32.SetWindowPos(
-                    explorerWindowHandle,
+                    currentExplorerWindowHandle,
                     isTopMost ? User32.HWND_TOPMOST : User32.HWND_NOTOPMOST,
                     0, 0, 0, 0,
                     User32.SWP_NOMOVE | User32.SWP_NOSIZE | User32.SWP_NOACTIVATE | User32.SWP_SHOWWINDOW);
 
-                int exStyle = User32.GetWindowLong(explorerWindowHandle, User32.GWL_EXSTYLE);
+                int exStyle = User32.GetWindowLong(currentExplorerWindowHandle, User32.GWL_EXSTYLE);
                 bool currentStateIsTopMost = (exStyle & User32.WS_EX_TOPMOST) != 0;
                 if (currentStateIsTopMost == isTopMost)
                 {
@@ -121,11 +106,36 @@ namespace ExplorerManager
             return false;
         }
 
+        private IntPtr WaitForNewExplorerWindow(List<IntPtr> initialExplorerWindows)
+        {
+            int elapsedMilliseconds = 0;
+            while (elapsedMilliseconds < MaxWaitTimeInMilliseconds)
+            {
+                var currentExplorerWindows = GetExplorerWindowHandles();
+                var newExplorerWindows = currentExplorerWindows.Except(initialExplorerWindows).ToList();
+
+                if (newExplorerWindows.Any())
+                {
+                    return newExplorerWindows.First();
+                }
+
+                Thread.Sleep(PollingIntervalInMilliseconds);
+                elapsedMilliseconds += PollingIntervalInMilliseconds;
+            }
+
+            return IntPtr.Zero;
+        }
+
+        private void StartWindowCloseCheckTimer(IntPtr hWnd)
+        {
+            windowCloseCheckTimer = new Timer(OnWindowClosedCheck, hWnd, 0, WindowCloseCheckInterval);
+        }
+
         private bool IsValidExplorerWindowHandle()
         {
-            return explorerWindowHandle != IntPtr.Zero &&
-                   User32.IsWindow(explorerWindowHandle) &&
-                   User32.IsWindowVisible(explorerWindowHandle);
+            return currentExplorerWindowHandle != IntPtr.Zero &&
+                   User32.IsWindow(currentExplorerWindowHandle) &&
+                   User32.IsWindowVisible(currentExplorerWindowHandle);
         }
 
         private void OnWindowClosedCheck(object state)
@@ -155,10 +165,10 @@ namespace ExplorerManager
                         explorerWindows.Add(hWnd);
                     }
                 }
-                catch (ArgumentException)
+                catch (ArgumentException ex)
                 {
                 }
-                catch (InvalidOperationException)
+                catch (InvalidOperationException ex)
                 {
                 }
 

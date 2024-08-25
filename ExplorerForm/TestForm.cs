@@ -65,7 +65,7 @@ namespace ExplorerForm
         {
             if (TryGetSelectedExplorerManager(out var explorerProcessManager))
             {
-                explorerProcessManager?.SetTopMost();
+                explorerProcessManager?.SetTopMostState(true);
             }
         }
 
@@ -73,7 +73,7 @@ namespace ExplorerForm
         {
             if (TryGetSelectedExplorerManager(out var explorerProcessManager))
             {
-                explorerProcessManager?.SetNoTopMost();
+                explorerProcessManager?.SetTopMostState(false);
             }
         }
 

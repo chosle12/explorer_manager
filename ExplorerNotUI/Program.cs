@@ -13,7 +13,7 @@ namespace ExplorerManager
             var explorer = explorerProcessManager.StartExplorer();
             if (explorer != IntPtr.Zero)
             {
-                explorerProcessManager.SetTopMost();
+                explorerProcessManager.SetTopMostState(true);
                 Application.Run();
             }
         }
