@@ -31,8 +31,6 @@
             buttonStart = new Button();
             labelStatusText = new Label();
             labelStatus = new Label();
-            labelPathText = new Label();
-            labelPath = new Label();
             buttonTopMost = new Button();
             buttonVisibleTop = new Button();
             comboBoxWindowIDs = new ComboBox();
@@ -41,7 +39,7 @@
             // 
             // buttonStart
             // 
-            buttonStart.Location = new Point(12, 123);
+            buttonStart.Location = new Point(12, 67);
             buttonStart.Name = "buttonStart";
             buttonStart.Size = new Size(171, 23);
             buttonStart.TabIndex = 0;
@@ -68,27 +66,9 @@
             labelStatus.TabIndex = 2;
             labelStatus.Text = "Off";
             // 
-            // labelPathText
-            // 
-            labelPathText.AutoSize = true;
-            labelPathText.Font = new Font("맑은 고딕", 9F, FontStyle.Bold);
-            labelPathText.Location = new Point(12, 68);
-            labelPathText.Name = "labelPathText";
-            labelPathText.Size = new Size(33, 15);
-            labelPathText.TabIndex = 3;
-            labelPathText.Text = "Path";
-            // 
-            // labelPath
-            // 
-            labelPath.AutoSize = true;
-            labelPath.Location = new Point(12, 96);
-            labelPath.Name = "labelPath";
-            labelPath.Size = new Size(0, 15);
-            labelPath.TabIndex = 4;
-            // 
             // buttonTopMost
             // 
-            buttonTopMost.Location = new Point(12, 152);
+            buttonTopMost.Location = new Point(12, 96);
             buttonTopMost.Name = "buttonTopMost";
             buttonTopMost.Size = new Size(88, 23);
             buttonTopMost.TabIndex = 5;
@@ -98,7 +78,7 @@
             // 
             // buttonVisibleTop
             // 
-            buttonVisibleTop.Location = new Point(12, 181);
+            buttonVisibleTop.Location = new Point(12, 125);
             buttonVisibleTop.Name = "buttonVisibleTop";
             buttonVisibleTop.Size = new Size(171, 23);
             buttonVisibleTop.TabIndex = 6;
@@ -109,14 +89,14 @@
             // comboBoxWindowIDs
             // 
             comboBoxWindowIDs.FormattingEnabled = true;
-            comboBoxWindowIDs.Location = new Point(189, 124);
+            comboBoxWindowIDs.Location = new Point(189, 68);
             comboBoxWindowIDs.Name = "comboBoxWindowIDs";
             comboBoxWindowIDs.Size = new Size(137, 23);
             comboBoxWindowIDs.TabIndex = 7;
             // 
             // buttonNoTopMost
             // 
-            buttonNoTopMost.Location = new Point(106, 152);
+            buttonNoTopMost.Location = new Point(106, 96);
             buttonNoTopMost.Name = "buttonNoTopMost";
             buttonNoTopMost.Size = new Size(77, 23);
             buttonNoTopMost.TabIndex = 8;
@@ -128,13 +108,11 @@
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(342, 218);
+            ClientSize = new Size(342, 159);
             Controls.Add(buttonNoTopMost);
             Controls.Add(comboBoxWindowIDs);
             Controls.Add(buttonVisibleTop);
             Controls.Add(buttonTopMost);
-            Controls.Add(labelPath);
-            Controls.Add(labelPathText);
             Controls.Add(labelStatus);
             Controls.Add(labelStatusText);
             Controls.Add(buttonStart);
@@ -150,8 +128,6 @@
         private Button buttonStart;
         private Label labelStatusText;
         private Label labelStatus;
-        private Label labelPathText;
-        private Label labelPath;
         private Button buttonTopMost;
         private Button buttonVisibleTop;
         private ComboBox comboBoxWindowIDs;
